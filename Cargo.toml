@@ -1,0 +1,30 @@
+[package]
+name = "dga_bevy_iap"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "In-app purchases and subscriptions for Bevy mobile games, powered by RevenueCat (Google Play and App Store)."
+license = "MIT"
+repository = "https://github.com/doublegarts/dga_bevy_iap"
+readme = "README.md"
+keywords = ["bevy", "iap", "revenuecat", "in-app-purchase", "gamedev"]
+categories = ["game-development", "api-bindings"]
+include = ["src/**/*", "android/**/*", "ios/**/*", "examples/**/*", "README.md", "LICENSE"]
+
+[dependencies]
+bevy_app = { version = "0.20", default-features = false }
+bevy_ecs = { version = "0.20", default-features = false }
+tracing = { version = "0.1", default-features = false, features = ["std"] }
+crossbeam-channel = "0.5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+
+[dev-dependencies]
+bevy_app = "0.20"
+
+[package.metadata.docs.rs]
+all-features = true

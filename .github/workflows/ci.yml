@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: aarch64-linux-android, aarch64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - run: cargo clippy --target aarch64-linux-android -- -D warnings
+      - run: cargo clippy --target aarch64-apple-ios -- -D warnings
+
+  android-bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+      - name: Build the Kotlin bridge
+        working-directory: .github/android-ci
+        run: gradle :dga-bevy-iap:assembleRelease
+
+  ios-bridge:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Swift bridge for iOS
+        working-directory: ios
+        run: xcodebuild -scheme DgaBevyIap -destination 'generic/platform=iOS' -skipPackagePluginValidation build
