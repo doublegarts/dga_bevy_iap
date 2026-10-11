@@ -13,6 +13,7 @@ pub enum ProductKind {
     OneTime,
     /// Auto-renewable or non-renewing subscription.
     Subscription,
+    /// The store reported a type this crate doesn't know.
     #[default]
     #[serde(other)]
     Unknown,
@@ -23,7 +24,9 @@ pub enum ProductKind {
 pub struct Product {
     /// Store product identifier, for example `coins_100`.
     pub id: String,
+    /// Localized name from the store listing.
     pub title: String,
+    /// Localized description from the store listing.
     pub description: String,
     /// Localized price ready to show, for example `€4.99`.
     pub price_string: String,
@@ -31,6 +34,7 @@ pub struct Product {
     pub price_micros: i64,
     /// ISO 4217 currency code, for example `EUR`.
     pub currency_code: String,
+    /// One-time purchase or subscription.
     pub kind: ProductKind,
     /// ISO 8601 billing period for subscriptions, for example `P1M`.
     #[serde(default)]
@@ -44,18 +48,23 @@ pub struct Package {
     pub id: String,
     /// RevenueCat package type, for example `MONTHLY`, `LIFETIME` or `CUSTOM`.
     pub package_type: String,
+    /// The store product this package sells.
     pub product: Product,
 }
 
 /// A set of packages shown together, typically one paywall or shop page.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Offering {
+    /// Offering identifier from the dashboard, for example `default`.
     pub id: String,
+    /// Description entered in the dashboard.
     pub description: String,
+    /// Packages in dashboard order.
     pub packages: Vec<Package>,
 }
 
 impl Offering {
+    /// Finds a package by its identifier, for example `$rc_monthly`.
     pub fn package(&self, package_id: &str) -> Option<&Package> {
         self.packages.iter().find(|p| p.id == package_id)
     }
@@ -66,14 +75,17 @@ impl Offering {
 pub struct Offerings {
     /// Identifier of the offering marked current in the dashboard.
     pub current: Option<String>,
+    /// Every offering in the project.
     pub all: Vec<Offering>,
 }
 
 impl Offerings {
+    /// The offering marked current in the dashboard, if there is one.
     pub fn current(&self) -> Option<&Offering> {
         self.current.as_deref().and_then(|id| self.get(id))
     }
 
+    /// Finds an offering by its identifier.
     pub fn get(&self, offering_id: &str) -> Option<&Offering> {
         self.all.iter().find(|o| o.id == offering_id)
     }
@@ -84,6 +96,7 @@ impl Offerings {
 pub struct Products(pub HashMap<String, Product>);
 
 impl Products {
+    /// Finds a product by its store id.
     pub fn get(&self, product_id: &str) -> Option<&Product> {
         self.0.get(product_id)
     }
@@ -92,16 +105,21 @@ impl Products {
 /// An entitlement the player has unlocked, for example `premium`.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Entitlement {
+    /// Entitlement identifier from the dashboard.
     pub id: String,
     /// Product that granted it.
     pub product_id: String,
+    /// Whether the entitlement currently grants access.
     pub is_active: bool,
+    /// Whether the subscription behind it will renew; `false` once the player cancels.
     pub will_renew: bool,
     /// Expiry in Unix milliseconds; `None` for lifetime purchases.
     #[serde(default)]
     pub expires_at_ms: Option<i64>,
+    /// Latest purchase or renewal in Unix milliseconds.
     #[serde(default)]
     pub latest_purchase_at_ms: Option<i64>,
+    /// `true` for test purchases (Play license testers, App Store sandbox).
     pub is_sandbox: bool,
 }
 
@@ -136,6 +154,7 @@ impl CustomerInfo {
 pub struct IapError {
     /// RevenueCat error code name, for example `NETWORK_ERROR` or `STORE_PROBLEM_ERROR`.
     pub code: String,
+    /// Human-readable detail from the SDK or store.
     pub message: String,
 }
 
@@ -150,15 +169,19 @@ impl std::error::Error for IapError {}
 /// Whether the store is ready to take requests.
 #[derive(Resource, Debug, Clone, PartialEq, Eq, Default)]
 pub enum IapStatus {
+    /// The plugin hasn't started configuring RevenueCat yet.
     #[default]
     NotConfigured,
+    /// RevenueCat is being configured.
     Configuring,
+    /// Requests can be sent.
     Ready,
     /// The store can't be used, for example a missing API key or no Play services.
     Unavailable(String),
 }
 
 impl IapStatus {
+    /// `true` when the store is [`IapStatus::Ready`].
     pub fn is_ready(&self) -> bool {
         matches!(self, IapStatus::Ready)
     }

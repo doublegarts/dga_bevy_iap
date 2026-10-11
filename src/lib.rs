@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
 
 mod backend;
 mod bridge;
@@ -59,6 +60,8 @@ impl Default for IapPlugin {
 }
 
 impl IapPlugin {
+    /// A plugin with no API keys. Add them with [`IapPlugin::android_api_key`] and
+    /// [`IapPlugin::ios_api_key`]; desktop builds don't need them.
     pub fn new() -> Self {
         Self {
             android_api_key: None,
@@ -167,10 +170,14 @@ pub enum IapSystems {
     Send,
 }
 
+/// The plugin's connection to the store.
 #[derive(Resource)]
 struct Store {
+    /// `None` when the store is unavailable (for example, a missing API key).
     backend: Option<Box<dyn Backend>>,
+    /// Results from the backend, drained every frame by [`receive_store_messages`].
     inbox: Receiver<NativeMessage>,
+    /// Sent once at startup by [`configure_store`], then cleared.
     configure: Option<Command>,
     fetch_offerings_on_start: bool,
 }
@@ -218,6 +225,8 @@ impl Plugin for IapPlugin {
     }
 }
 
+/// Startup system: configures RevenueCat and, by default, fetches offerings. When the store is
+/// unavailable it reports that once as [`IapEvent::Unavailable`] instead.
 fn configure_store(
     mut store: ResMut<Store>,
     mut status: ResMut<IapStatus>,
@@ -242,6 +251,7 @@ fn configure_store(
     }
 }
 
+/// Forwards each [`IapRequest`] to the backend. Without a backend, every request fails at once.
 fn send_store_requests(
     store: Res<Store>,
     mut requests: MessageReader<IapRequest>,
@@ -271,6 +281,7 @@ fn send_store_requests(
     }
 }
 
+/// The failure event a request gets when the store is unavailable.
 fn unavailable_failure(request: &IapRequest) -> IapEvent {
     let error = IapError {
         code: "CONFIGURATION_ERROR".into(),
@@ -292,6 +303,8 @@ fn unavailable_failure(request: &IapRequest) -> IapEvent {
     }
 }
 
+/// Applies backend results to the resources and turns each into an [`IapEvent`].
+/// A customer info refresh that changes nothing produces no event.
 fn receive_store_messages(
     store: Res<Store>,
     mut status: ResMut<IapStatus>,

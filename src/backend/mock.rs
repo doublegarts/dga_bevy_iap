@@ -16,10 +16,14 @@ const ANONYMOUS_USER: &str = "$RCAnonymousID:mock";
 /// What the next mock purchase does.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum MockOutcome {
+    /// The purchase completes and is granted (the default).
     #[default]
     Success,
+    /// The player cancels: [`IapEvent::PurchaseCancelled`](crate::IapEvent::PurchaseCancelled).
     Cancel,
+    /// The purchase waits for approval until [`MockStoreControl::approve_pending`].
     Pending,
+    /// The purchase fails with this error.
     Fail(IapError),
 }
 
@@ -32,6 +36,7 @@ pub struct MockStore {
 }
 
 impl MockStore {
+    /// An empty catalog. Add products, offerings and entitlements with the builder methods.
     pub fn new() -> Self {
         Self::default()
     }
@@ -52,6 +57,7 @@ impl MockStore {
         ))
     }
 
+    /// Adds a product with every field spelled out.
     pub fn product(mut self, product: Product) -> Self {
         self.products.push(product);
         self
@@ -139,20 +145,28 @@ fn package_type(package_id: &str) -> String {
     .to_owned()
 }
 
+/// Purchases of one mock user.
 #[derive(Debug, Default)]
 struct UserState {
+    /// Subscriptions and entitlement products the user holds now.
     owned: HashSet<String>,
+    /// Every product bought, consumables included.
     purchased: Vec<String>,
 }
 
+/// Everything the mock store remembers, shared between the backend and [`MockStoreControl`].
 #[derive(Debug)]
 struct MockState {
     store: MockStore,
+    /// Requests fail with `CONFIGURATION_ERROR` until the configure command arrives, as in the SDKs.
     configured: bool,
+    /// Current app user id.
     user: String,
     users: HashMap<String, UserState>,
     next_outcome: MockOutcome,
+    /// Products waiting for [`MockStoreControl::approve_pending`].
     pending: Vec<String>,
+    /// Counter for fake transaction ids.
     transactions: u64,
 }
 
@@ -348,6 +362,7 @@ fn op_name(command: &Command) -> String {
         .unwrap_or_default()
 }
 
+/// Answers commands from [`MockState`] straight away, on the calling thread.
 pub(crate) struct MockBackend {
     state: Arc<Mutex<MockState>>,
     out: Sender<NativeMessage>,

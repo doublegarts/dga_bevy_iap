@@ -9,6 +9,8 @@ pub(crate) mod android;
 pub(crate) mod ios;
 pub mod mock;
 
+/// A store the plugin can talk to.
 pub(crate) trait Backend: Send + Sync + 'static {
+    /// Sends one command. Results come back later, on the inbox the backend was created with.
     fn send(&self, command: Command);
 }
