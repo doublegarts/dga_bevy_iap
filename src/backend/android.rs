@@ -21,10 +21,15 @@ pub(crate) struct AndroidBackend {
 
 impl AndroidBackend {
     pub(crate) fn new() -> Result<Self, String> {
-        let context = ndk_context::android_context();
-        // SAFETY: ndk-context is initialised by android-activity with the app's JavaVM and Activity.
-        let vm = unsafe { JavaVM::from_raw(context.vm().cast()) }.map_err(|e| e.to_string())?;
-        let activity = unsafe { JObject::from_raw(context.context().cast()) };
+        // The bridge needs the running Activity. ndk-context holds the Application context,
+        // which is not one: CheckJNI aborts on it and purchases could not start a flow.
+        let app = bevy_android::ANDROID_APP
+            .get()
+            .ok_or("bevy_android::ANDROID_APP is not set")?;
+        // SAFETY: android-activity hands out the process's valid JavaVM and a global reference
+        // to the running Activity.
+        let vm = unsafe { JavaVM::from_raw(app.vm_as_ptr().cast()) }.map_err(|e| e.to_string())?;
+        let activity = unsafe { JObject::from_raw(app.activity_as_ptr() as jni::sys::jobject) };
         let mut env = vm
             .attach_current_thread_permanently()
             .map_err(|e| e.to_string())?;

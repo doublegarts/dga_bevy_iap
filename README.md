@@ -99,8 +99,9 @@ Apple requires a visible Restore button in apps that sell non-consumables or sub
 
 ## Android setup
 
-The plugin needs the Kotlin bridge compiled into your app. It finds the activity through
-`ndk-context`, which Bevy's `android-game-activity` and `android-native-activity` features set up.
+The plugin needs the Kotlin bridge compiled into your app. It finds the running activity
+through `bevy_android::ANDROID_APP`, which Bevy's `android-game-activity` and
+`android-native-activity` features set up.
 
 1. Copy this crate's `android/` folder into your Android project, for example as `dga-bevy-iap/`
    (find it under `~/.cargo/registry/src/*/dga_bevy_iap-*/android`).
